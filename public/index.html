@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fmc AI - Pro Chat</title> 
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* CSS Kamu tetap sama persis seperti yang kamu berikan di atas */
+        /* (Saya tidak mengubah CSS agar tampilan tidak berubah) */
+        :root {
+            --primary: #2563eb; --primary-hover: #1d4ed8; --bg-body: #f8fafc;
+            --bg-sidebar: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+            --border: #e2e8f0; --msg-user-bg: #eff6ff; --msg-user-text: #1e3a8a;
+            --msg-bot-text: #334155; --input-bg: #ffffff; --card-bg: #ffffff;
+            --code-bg: #1e293b; --hover-bg: #f1f5f9; --sidebar-width: 260px; --radius: 16px;
+        }
+        body.dark-mode {
+            --bg-body: #0f172a; --bg-sidebar: #1e293b; --text-main: #f1f5f9;
+            --text-muted: #94a3b8; --border: #334155; --msg-user-bg: #1e40af;
+            --msg-user-text: #e0e7ff; --msg-bot-text: #e2e8f0; --input-bg: #1e293b;
+            --card-bg: #1e293b; --hover-bg: #334155;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100vh; height: 100dvh; display: flex; overflow: hidden; transition: background-color 0.3s, color 0.3s; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        body.dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
+        .sidebar { width: var(--sidebar-width); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; position: relative; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s, border-color 0.3s; }
+        .sidebar-header { padding: 20px; display: flex; align-items: center; gap: 12px; }
+        .logo-img { width: 32px; height: 32px; border-radius: 8px; }
+        .logo-text { font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+        .theme-btn { margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 8px; transition: 0.2s; }
+        .theme-btn:hover { background: var(--hover-bg); color: var(--text-main); }
+        .new-chat-wrapper { padding: 0 16px 16px 16px; }
+        .btn-new-chat { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; font-weight: 600; color: var(--text-main); transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .btn-new-chat:hover { border-color: var(--primary); color: var(--primary); background: var(--hover-bg); }
+        .history-label { padding: 16px 20px 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .history-list { flex: 1; overflow-y: auto; padding: 0 12px; }
+        .history-item { padding: 10px 12px; margin-bottom: 4px; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .history-item:hover { background: var(--hover-bg); color: var(--text-main); }
+        .history-delete { margin-left: auto; opacity: 0; transition: 0.2s; font-size: 16px; }
+        .history-item:hover .history-delete { opacity: 0.6; }
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 90; display: none; opacity: 0; transition: opacity 0.3s; }
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+        .mobile-header { display: none; padding: 12px 16px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); align-items: center; justify-content: space-between; z-index: 50; }
+        .chat-scroll-area { flex: 1; overflow-y: auto; scroll-behavior: smooth; display: flex; flex-direction: column; padding-bottom: 20px; }
+        .messages-container { flex: 1; max-width: 800px; width: 100%; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+        .msg { display: flex; gap: 16px; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .msg-avatar { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; background-size: cover; background-position: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .user .msg-avatar { background-image: url('https://files.catbox.moe/gpw6ah.png'); border: 2px solid #fff; }
+        .bot .msg-avatar { background-image: url('https://files.catbox.moe/yfxidj.png'); background-color: #fff; }
+        .msg-content { flex: 1; min-width: 0; font-size: 15px; line-height: 1.6; }
+        .user .msg-content { background: var(--msg-user-bg); color: var(--msg-user-text); padding: 12px 18px; border-radius: 18px 4px 18px 18px; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .bot .msg-content { padding-top: 6px; color: var(--msg-bot-text); }
+        .bot h1, .bot h2 { margin: 20px 0 10px; font-weight: 700; color: var(--text-main); }
+        .bot code { background: var(--hover-bg); padding: 2px 5px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; color: #ec4899; }
+        .bot pre { background: #0f172a; border-radius: 12px; overflow: hidden; margin: 16px 0; border: 1px solid var(--border); }
+        .bot pre code { background: transparent; color: #e2e8f0; padding: 16px; display: block; overflow-x: auto; }
+        .code-header { display: flex; justify-content: space-between; padding: 8px 16px; background: #1e293b; color: #94a3b8; font-size: 12px; border-bottom: 1px solid #334155; }
+        .copy-btn { background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 11px; }
+        .input-wrapper-sticky { padding: 0 16px 24px 16px; position: sticky; bottom: 0; background: linear-gradient(to top, var(--bg-body) 60%, transparent); z-index: 40; }
+        .input-card { max-width: 800px; margin: 0 auto; background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08); border: 1px solid var(--border); display: flex; flex-direction: column; transition: all 0.3s; }
+        .input-card:focus-within { border-color: var(--primary); }
+        .toolbar { padding: 10px 16px 0; display: flex; gap: 10px; }
+        .tool-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--hover-bg); border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+        .tool-chip.active { background: #eff6ff; color: var(--primary); }
+        .input-row { display: flex; align-items: flex-end; padding: 10px 10px 10px 16px; }
+        textarea { flex: 1; border: none; outline: none; resize: none; max-height: 200px; padding: 6px 0; font-size: 16px; color: var(--text-main); background: transparent; }
+        .send-btn { width: 40px; height: 40px; border-radius: 12px; background: var(--primary); color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 10px; transition: 0.2s; }
+        .send-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .welcome-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; }
+        .welcome-icon { width: 72px; height: 72px; margin-bottom: 20px; border-radius: 18px; }
+        .suggestion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; width: 100%; max-width: 600px; margin-top: 30px; }
+        .suggestion-card { background: var(--card-bg); border: 1px solid var(--border); padding: 14px; border-radius: 12px; text-align: left; cursor: pointer; transition: 0.2s; }
+        .suggestion-card:hover { border-color: var(--primary); }
+        .typing { display: flex; gap: 4px; padding: 8px 0; }
+        .dot { width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: bounce 1.4s infinite; }
+        .dot:nth-child(2) { animation-delay: 0.2s; } .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 1000; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        @media (max-width: 768px) { .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); } .sidebar.active { transform: translateX(0); } .mobile-header { display: flex; } .overlay.active { display: block; opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div id="toast" class="toast">
+        <span class="material-icons-round" style="color:#4ade80">check_circle</span>
+        <span id="toast-msg">Berhasil disalin!</span>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="https://files.catbox.moe/yfxidj.png" class="logo-img" alt="Logo">
+            <span class="logo-text">Fmc AI</span>
+            <button id="theme-toggle" class="theme-btn" title="Toggle Dark Mode">
+                <span class="material-icons-round">dark_mode</span>
+            </button>
+        </div>
+
+        <div class="new-chat-wrapper">
+            <button class="btn-new-chat" id="btn-reset-chat">
+                <span class="material-icons-round" style="color:var(--primary)">add_circle</span>
+                New Chat
+            </button>
+        </div>
+
+        <div class="history-label">Riwayat Percakapan</div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+
+    <div class="main-content">
+        <div class="mobile-header">
+            <button onclick="toggleSidebar()" style="background:none; border:none; cursor:pointer; color:var(--text-muted)">
+                <span class="material-icons-round" style="font-size:26px">menu</span>
+            </button>
+            <span style="font-weight:700; font-size:16px;">Fmc Chat</span>
+            <div style="width:26px"></div>
+        </div>
+
+        <div class="chat-scroll-area" id="scroll-container">
+            <div class="messages-container" id="chat-feed">
+                <div class="welcome-screen" id="welcome">
+                    <img src="https://files.catbox.moe/yfxidj.png" class="welcome-icon" alt="AI">
+                    <h2 style="font-weight:700; margin-bottom:8px">Selamat Datang</h2>
+                    <p style="color:var(--text-muted)">Saya siap membantu Anda mencari informasi atau menulis kode.</p>
+                    
+                    <div class="suggestion-grid">
+                        <div class="suggestion-card" onclick="setInput('Buatkan itinerary liburan ke Jepang 5 hari')">
+                            <div style="font-weight:600; font-size:14px; margin-bottom:4px">✈️ Travel</div>
+                            <div style="font-size:12px; color:var(--text-muted)">Itinerary Jepang 5 Hari</div>
+                        </div>
+                        <div class="suggestion-card" onclick="setInput('Jelaskan teori relativitas Einstein')">
+                            <div style="font-weight:600; font-size:14px; margin-bottom:4px">⚛️ Fisika</div>
+                            <div style="font-size:12px; color:var(--text-muted)">Teori Relativitas</div>
+                        </div>
+                        <div class="suggestion-card" onclick="setInput('Buat kode HTML CSS untuk login form')">
+                            <div style="font-weight:600; font-size:14px; margin-bottom:4px">💻 Coding</div>
+                            <div style="font-size:12px; color:var(--text-muted)">Login Form Template</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-wrapper-sticky">
+            <div class="input-card">
+                <div class="toolbar">
+                    <div class="tool-chip" id="btn-search-toggle">
+                        <span class="material-icons-round" style="font-size:16px" id="icon-search">public_off</span>
+                        <span id="text-search">Web Search Off</span>
+                    </div>
+                </div>
+                <div class="input-row">
+                    <textarea id="user-input" rows="1" placeholder="Ketik pesan di sini..."></textarea>
+                    <button class="send-btn" id="send-btn">
+                        <span class="material-icons-round">arrow_upward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        // SEKARANG MEMANGGIL ENDPOINT BACKEND VERCEL SENDIRI
+        const API_ENDPOINT = "/api/chat"; 
+        
+        let state = {
+            chatId: null,
+            isSearch: false,
+            isLoading: false,
+            hasHistorySaved: false
+        };
+
+        const els = {
+            input: document.getElementById('user-input'),
+            sendBtn: document.getElementById('send-btn'),
+            feed: document.getElementById('chat-feed'),
+            welcome: document.getElementById('welcome'),
+            scrollContainer: document.getElementById('scroll-container'),
+            searchBtn: document.getElementById('btn-search-toggle'),
+            sidebar: document.getElementById('sidebar'),
+            overlay: document.getElementById('overlay'),
+            resetBtn: document.getElementById('btn-reset-chat'),
+            themeToggle: document.getElementById('theme-toggle')
+        };
+
+        marked.setOptions({
+            highlight: (code, lang) => {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-',
+            breaks: true
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            loadHistory();
+        });
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if(savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                els.themeToggle.innerHTML = '<span class="material-icons-round">light_mode</span>';
+            }
+        }
+
+        els.themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            els.themeToggle.innerHTML = isDark ? '<span class="material-icons-round">light_mode</span>' : '<span class="material-icons-round">dark_mode</span>';
+        });
+
+        function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            if(history.length === 0) {
+                list.innerHTML = '<div style="padding:10px 12px; font-size:12px; color:var(--text-muted); font-style:italic">Belum ada riwayat</div>';
+                return;
+            }
+            history.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<span class="material-icons-round icon">chat_bubble_outline</span><span style="flex:1; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(item.title)}</span><span class="material-icons-round history-delete">close</span>`;
+                div.onclick = (e) => { if(e.target.classList.contains('history-delete')) return; toggleSidebar(false); };
+                div.querySelector('.history-delete').onclick = (e) => { e.stopPropagation(); deleteHistory(index); };
+                list.appendChild(div);
+            });
+        }
+
+        function saveToHistory(text) {
+            if(state.hasHistorySaved) return;
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            const title = text.length > 25 ? text.substring(0, 25) + '...' : text;
+            history.unshift({ title: title, date: new Date().toISOString() });
+            localStorage.setItem('chatHistory', JSON.stringify(history));
+            state.hasHistorySaved = true;
+            loadHistory();
+        }
+
+        function deleteHistory(index) {
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            history.splice(index, 1);
+            localStorage.setItem('chatHistory', JSON.stringify(history));
+            loadHistory();
+        }
+
+        els.resetBtn.addEventListener('click', () => {
+            state.chatId = null;
+            state.hasHistorySaved = false;
+            els.feed.innerHTML = '';
+            els.feed.appendChild(els.welcome);
+            els.welcome.style.display = 'flex';
+            toggleSidebar(false);
+        });
+
+        els.searchBtn.addEventListener('click', () => {
+            state.isSearch = !state.isSearch;
+            els.searchBtn.classList.toggle('active', state.isSearch);
+            document.getElementById('icon-search').textContent = state.isSearch ? 'public' : 'public_off';
+            document.getElementById('text-search').textContent = state.isSearch ? 'Web Search On' : 'Web Search Off';
+        });
+
+        els.sendBtn.addEventListener('click', sendMessage);
+        els.input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+        els.input.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 200) + 'px'; els.sendBtn.disabled = !this.value.trim(); });
+
+        async function sendMessage() {
+            const text = els.input.value.trim();
+            if (!text || state.isLoading) return;
+
+            if(els.welcome) els.welcome.style.display = 'none';
+            appendMessage(text, 'user');
+            saveToHistory(text);
+
+            els.input.value = '';
+            els.input.style.height = 'auto';
+            setLoading(true);
+
+            // MEMANGGIL BACKEND
+            let url = `${API_ENDPOINT}?query=${encodeURIComponent(text)}&webSearch=${state.isSearch}`;
+            if (state.chatId) url += `&chatId=${state.chatId}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                setLoading(false);
+                if (data.status && data.result) {
+                    if (data.result.chatId) state.chatId = data.result.chatId;
+                    appendMessage(data.result.answer || "Maaf, tidak ada jawaban.", 'bot', data.result.webSearch);
+                } else {
+                    appendMessage("Terjadi kesalahan sistem.", 'bot');
+                }
+            } catch (err) {
+                setLoading(false);
+                appendMessage("Gagal terhubung ke backend.", 'bot');
+            }
+        }
+
+        function appendMessage(text, sender, isWebSource = false) {
+            const div = document.createElement('div');
+            div.className = `msg ${sender}`;
+            let contentHtml = sender === 'user' ? escapeHtml(text) : marked.parse(text);
+            if (sender === 'bot' && isWebSource) {
+                contentHtml = `<div style="color:var(--primary); font-size:12px; margin-bottom:8px; display:flex; gap:4px; font-weight:600;"><span class="material-icons-round" style="font-size:14px">travel_explore</span> Sources Found</div>` + contentHtml;
+            }
+            div.innerHTML = `<div class="msg-avatar"></div><div class="msg-content">${contentHtml}</div>`;
+            els.feed.appendChild(div);
+            if(sender === 'bot') {
+                div.querySelectorAll('pre code').forEach(block => { hljs.highlightElement(block); addCopyBtn(block); });
+                if(window.MathJax) MathJax.typesetPromise([div]);
+            }
+            scrollToBottom();
+        }
+
+        function addCopyBtn(block) {
+            const pre = block.parentElement;
+            if (pre.querySelector('.code-header')) return;
+            const header = document.createElement('div');
+            header.className = 'code-header';
+            header.innerHTML = `<span>Code</span><button class="copy-btn"><span class="material-icons-round" style="font-size:14px">content_copy</span>Copy</button>`;
+            pre.insertBefore(header, block);
+            header.querySelector('button').addEventListener('click', () => {
+                navigator.clipboard.writeText(block.innerText);
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            });
+        }
+
+        function setLoading(isLoading) {
+            state.isLoading = isLoading;
+            els.sendBtn.disabled = isLoading;
+            if(isLoading) {
+                const div = document.createElement('div');
+                div.id = 'loading-indicator';
+                div.className = 'msg bot';
+                div.innerHTML = `<div class="msg-avatar"></div><div class="msg-content"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+                els.feed.appendChild(div);
+                scrollToBottom();
+            } else {
+                const loader = document.getElementById('loading-indicator');
+                if(loader) loader.remove();
+            }
+        }
+
+        function scrollToBottom() { els.scrollContainer.scrollTo({ top: els.scrollContainer.scrollHeight, behavior: 'smooth' }); }
+        function setInput(text) { els.input.value = text; els.input.focus(); els.input.dispatchEvent(new Event('input')); }
+        function toggleSidebar(force) { const isOpen = typeof force === 'boolean' ? force : !els.sidebar.classList.contains('active'); els.sidebar.classList.toggle('active', isOpen); els.overlay.classList.toggle('active', isOpen); }
+        els.overlay.addEventListener('click', () => toggleSidebar(false));
+        function escapeHtml(text) { return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+    </script>
+</body>
+</html>
